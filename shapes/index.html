@@ -1,0 +1,310 @@
+<html>
+
+<head>
+    <title>Game</title>
+</head>
+<style>
+    #game {
+        margin: 50px auto;
+        width: 770px;
+        display: flex;
+    }
+
+    #shapeArea {
+        width: 240px;
+        height: 600px;
+        border: 1px solid #ccc;
+        margin-left: 20px;
+        padding-top: 32px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    #playArea {
+        width: 500px;
+        height: 500px;
+        border: 1px solid #ccc;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    #playArea div {
+        width: 48px;
+        height: 48px;
+        border: 1px solid #eaeaea;
+    }
+
+    .shapeContainer {
+        width: 150px;
+        height: 150px;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+    }
+
+    .shapeContainer div {
+        width: 48px;
+        height: 48px;
+
+    }
+
+    .shapePart {
+        box-shadow: 0px 0px 0px 1px #eaeaea inset;
+
+        background-color: chocolate;
+    }
+
+    .shapeHover {
+        background-color: rgb(162, 68, 0);
+    }
+
+    .boxHover {
+        background-color: rgb(196, 243, 143);
+    }
+
+    .boxPut {
+        background-color: rgb(49, 91, 2);
+    }
+
+    .clearingHighlight {
+        background-color: rgb(221, 56, 128);
+        -webkit-transition: all 0.5s ease;
+        -moz-transition: all 0.5s ease;
+        -o-transition: all 0.5s ease;
+        transition: all 0.5s ease;
+    }
+</style>
+
+<body>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+            integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <script src="jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles-confetti@2.11.0/tsparticles.confetti.bundle.min.js"></script>
+    <script>
+        const shapes = [
+            [[0, 0], [1, 1]],
+            [[0, 0], [1, 1], [0, 1]],
+            [[0, 0], [1, 1], [1, 0]],
+            [[0, 0], [1, 0], [1, 1], [1, 2]],
+            [[0, 0], [1, 0], [0, 1], [1, 1]],
+            [[0, 0], [0, 1], [0, 2]],
+            [[0, 0], [1, 0], [2, 0]],
+            //            [[0, 0], [1, 0], [2, 0], [3, 0]],
+        ]
+
+        var searchingIndex;
+        var searchingShape;
+        var putBoxes = [];
+        var rowsToClean = [];
+        var columnsToClean = [];
+        var rowsToHighlight = [];
+        var columnsToHighlight = [];
+
+        function init() {
+            var playArea = $("#playArea");
+            for(let i = 0; i < 10; i++) {
+                for(let j = 0; j < 10; j++) {
+                    playArea.append("<div class='playBox' data-i='" + i + "' data-j='" + j + "'></div>");
+                }
+            }
+            for(let i = 0; i < 3; i++) {
+                drawWaitingShape();
+            }
+        }
+
+        function drawWaitingShape() {
+            var randomShapeIndex = Math.floor(Math.random() * shapes.length);
+            var randomShape = shapes[randomShapeIndex];
+            var shapeContainer = $("<div data-id='" + randomShapeIndex + "' class='shapeContainer'></div>");
+            const playAreaPos = $("#playArea").position();
+            const playAreaOff = $("#playArea").offset();
+            shapeContainer.draggable({
+                drag: function (event, ui) {
+                    if(ui.offset.left > playAreaOff.left && ui.offset.top > playAreaOff.top) {
+                        const topCornerLeft = ui.offset.left - playAreaOff.left;
+                        const topCornerTop = ui.offset.top - playAreaOff.top;
+
+                        boxLeftIndex = Math.round(topCornerLeft / 50);
+                        boxTopIndex = Math.round(topCornerTop / 50);
+
+                        searchingIndex = -1;
+                        searchingShape = [];
+
+                        $(".boxHover").removeClass("boxHover");
+                        $(".clearingHighlight").removeClass("clearingHighlight");
+
+                        var overridingPutBox = false;
+
+                        for(let i = 0; i < randomShape.length; i++) {
+                            if(putBoxes.filter(e => e[0] === boxLeftIndex + randomShape[i][0] && e[1] === boxTopIndex + randomShape[i][1]).length > 0) {
+                                overridingPutBox = true;
+                            }
+                        }
+
+                        if(!overridingPutBox && boxLeftIndex < 10 && boxTopIndex < 10) {
+                            for(let i = 0; i < randomShape.length; i++) {
+                                $(".playBox[data-j='" + (boxLeftIndex + randomShape[i][0]) + "'][data-i='" + (boxTopIndex + randomShape[i][1]) + "']").addClass("boxHover");
+                            }
+                            searchingIndex = [boxLeftIndex, boxTopIndex];
+                            searchingShape = randomShape;
+                            checkLineHighlight();
+                        }
+                    }
+                },
+                stop: function (event, ui) {
+
+                    if(searchingIndex !== -1) {
+                        for(let i = 0; i < searchingShape.length; i++) {
+                            $(".playBox[data-j='" + (searchingIndex[0] + searchingShape[i][0]) + "'][data-i='" + (searchingIndex[1] + searchingShape[i][1]) + "']").addClass("boxPut");
+                            putBoxes.push([searchingIndex[0] + searchingShape[i][0], searchingIndex[1] + searchingShape[i][1]])
+                        }
+                        ui.helper.remove();
+                        checkLines();
+                        cleanLines();
+                    }
+
+                    $(".boxHover").removeClass("boxHover");
+                    $(".clearingHighlight").removeClass("clearingHighlight");
+
+                    if($(".shapeContainer").length < 1) {
+                        for(let i = 0; i < 3; i++) {
+                            drawWaitingShape();
+                        }
+                    }
+                }
+            });
+
+            for(let i = 0; i < 3; i++) {
+                for(let j = 0; j < 3; j++) {
+                    const newShapePart = $("<div data-i='" + i + "' data-j='" + j + "'></div>");
+                    if(randomShape.filter(e => e[0] === j && e[1] === i).length > 0) {
+                        newShapePart.addClass("shapePart");
+                    }
+                    shapeContainer.append(newShapePart);
+                }
+            }
+            $("#shapeArea").append(shapeContainer);
+        }
+
+        function cleanLines() {
+            for(let i = 0; i < rowsToClean.length; i++) {
+                putBoxes = putBoxes.filter(item => item[1] !== rowsToClean[i]);
+            }
+
+            for(let i = 0; i < columnsToClean.length; i++) {
+                putBoxes = putBoxes.filter(item => item[0] !== columnsToClean[i]);
+            }
+
+            for(let i = 0; i < rowsToClean.length; i++) {
+                $(".playBox[data-i='" + rowsToClean[i] + "']").removeClass("boxPut");
+                confetti({
+                    particleCount: 60,
+                    spread: 20,
+                    origin: {
+                        x: 0.4, y: 0.5
+                    }
+                });
+            }
+
+            for(let i = 0; i < columnsToClean.length; i++) {
+                $(".playBox[data-j='" + columnsToClean[i] + "']").removeClass("boxPut");
+                confetti({
+                    particleCount: 60,
+                    spread: 20,
+                    origin: {
+                        x: 0.4, y: 0.5
+                    }
+                });
+            }
+
+            rowsToClean = [];
+            columnsToClean = [];
+        }
+        function checkLines() {
+            for(let i = 0; i < 10; i++) {
+                let rowMatch = 0;
+                for(let j = 0; j < 10; j++) {
+                    if(putBoxes.filter(e => e[0] == j && e[1] == i).length > 0) {
+                        rowMatch++;
+                    }
+                }
+                if(rowMatch == 10) {
+                    rowsToClean.push(i);
+                }
+            }
+
+            for(let i = 0; i < 10; i++) {
+                var columnMatch = 0;
+                for(let j = 0; j < 10; j++) {
+
+                    if(putBoxes.filter(e => e[0] == i && e[1] == j).length > 0) {
+                        columnMatch++;
+                    }
+                }
+                if(columnMatch == 10) {
+                    columnsToClean.push(i);
+                }
+            }
+        }
+
+
+        function checkLineHighlight() {
+            let existingBoxes = [];
+            columnsToHighlight = [];
+            rowsToHighlight = [];
+            for(let i = 0; i < putBoxes.length; i++) {
+                existingBoxes.push(putBoxes[i]);
+            }
+
+            for(let i = 0; i < searchingShape.length; i++) {
+                existingBoxes.push([searchingShape[i][0] + searchingIndex[0], searchingShape[i][1] + searchingIndex[1]]);
+            }
+
+
+            for(let i = 0; i < 10; i++) {
+                let rowMatch = 0;
+                for(let j = 0; j < 10; j++) {
+                    if(existingBoxes.filter(e => e[0] == j && e[1] == i).length > 0) {
+                        rowMatch++;
+                    }
+                }
+                if(rowMatch == 10) {
+                    rowsToHighlight.push(i);
+                }
+            }
+
+            for(let i = 0; i < 10; i++) {
+                var columnMatch = 0;
+                for(let j = 0; j < 10; j++) {
+
+                    if(existingBoxes.filter(e => e[0] == i && e[1] == j).length > 0) {
+                        columnMatch++;
+                    }
+                }
+                if(columnMatch == 10) {
+                    columnsToHighlight.push(i);
+                }
+            }
+
+            $(".playBox").removeClass("clearingHighlight");
+            for(let i = 0; i < rowsToHighlight.length; i++) {
+                $(".playBox[data-i='" + rowsToHighlight[i] + "']").addClass("clearingHighlight");
+            }
+            for(let i = 0; i < columnsToHighlight.length; i++) {
+                $(".playBox[data-j='" + columnsToHighlight[i] + "']").addClass("clearingHighlight");
+            }
+        }
+
+        window.onload = init;
+
+    </script>
+    <div id="game">
+        <div id="playArea">
+
+        </div>
+        <div id="shapeArea"></div>
+    </div>
+</body>
+
+</html>
