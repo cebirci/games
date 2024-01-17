@@ -267,7 +267,8 @@
             $(".colorBox").removeClass("draftSelected");
             let box = $(".colorBox[data-j='" + y + "'][data-i='" + x + "']");
             let colorType = box.attr("data-c");
-
+            box.addClass("draftSelected");
+            draftSelectList.push([x, y]);
 
             var q = [];
 
@@ -292,9 +293,9 @@
                 }
             }
 
-            if(draftSelectList.length > 0) {
-                box.addClass("draftSelected");
-                draftSelectList.push([x, y]);
+            if(draftSelectList.length == 1) {
+                box.addClass("draftSelected").removeClass("draftSelected");
+                draftSelectList = [];
             }
 
             vis = Array.from(Array(GRIDSIZE), () => Array(GRIDSIZE).fill(false));
