@@ -1,0 +1,79 @@
+<html>
+
+<head>
+    <style>
+        html {
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        .gameScreen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            height: 95vw;
+            background-color: azure;
+
+        }
+
+        .board {
+            width: 95%;
+            height: 95%;
+            background-color: #FFF;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+
+        }
+
+        .colorBox {
+            width: 10%;
+            height: 10%;
+            border: 1px solid rgb(228, 228, 228);
+            box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            -webkit-box-sizing: border-box;
+            display: flex;
+            align-content: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .colorBall {
+            background-color: bisque;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script>
+        function init() {
+            var board = $(".board");
+            for(let i = 0; i < 10; i++) {
+                for(let j = 0; j < 10; j++) {
+                    board.append("<div class='colorBox' data-i='" + i + "' data-j='" + j + "'><div class=\"colorBall\"></div></div>");
+                }
+            }
+        }
+        window.onload = init;
+    </script>
+
+
+</head>
+
+<body>
+    <div class="gameScreen">
+        <div class="board"></div>
+    </div>
+</body>
+
+</html>
