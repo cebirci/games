@@ -26,7 +26,7 @@
             text-align: center;
             height: 95vw;
             background-color: azure;
-
+            flex-direction: column;
         }
 
         .board {
@@ -52,8 +52,19 @@
             flex-wrap: wrap;
         }
 
+        .scores {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 30px;
+            font-family: monospace;
+            font-size: xx-large;
+        }
+
+        .scores div {
+            display: flex;
+        }
+
         .colorBall {
-            background-color: bisque;
             width: 80%;
             height: 80%;
             border-radius: 50%;
@@ -74,19 +85,235 @@
         .yellow {
             background-color: khaki;
         }
+
+        .draftSelected {
+            background-color: lightgrey;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script>
+        const GRIDSIZE = 10;
         const colors = ["red", "blue", "green", "yellow"];
+        let draftSelectList = [];
+        let draftPoint = 0;
+        let totalPoint = 0;
+        var columnsPopping = {};
+        function addSecs(d, s) { return new Date(d.valueOf() + s * 100); }
         function init() {
+            loadHighScore();
             var board = $(".board");
-            for(let i = 0; i < 10; i++) {
-                for(let j = 0; j < 10; j++) {
-                    let colorName = colors[Math.floor(Math.random() * colors.length)];
-                    board.append("<div class='colorBox' data-i='" + i + "' data-j='" + j + "'><div class=\"colorBall " + colorName + "\"></div></div>");
+            for(let i = 0; i < GRIDSIZE; i++) {
+                for(let j = 0; j < GRIDSIZE; j++) {
+                    let colorType = Math.floor(Math.random() * colors.length);
+                    let colorName = colors[colorType];
+                    board.append("<div class='colorBox' data-i='" + i + "' data-j='" + j + "' data-c='" + colorType + "''><div class=\"colorBall " + colorName + "\"></div></div>");
                 }
             }
+
+            $(".colorBox").on("click", function () {
+                let x = parseInt($(this).attr("data-i"), 10);
+                let y = parseInt($(this).attr("data-j"), 10);
+                let c = parseInt($(this).attr("data-c"), 10);
+
+                if(isNaN(c)) {
+                    return;
+                }
+
+                var isNewArea = !check2DArrayIncludes(draftSelectList, [x, y]);
+                if(isNewArea) {
+                    draftSelection(x, y);
+                    calculateDraftPoint();
+                } else {
+                    if(draftSelectList.length > 1) {
+                        calculatePop();
+                        actPop();
+                        if(checkFinishGame()) {
+                            setTimeout(function () {
+                                start = new Date();
+                                end = addSecs(start, 1);
+                                do { start = new Date(); } while(end - start > 0);
+
+                                finishGame();
+
+                            }, 10);
+                        }
+                    }
+
+
+                }
+
+
+            });
+
         }
+
+        function finishGame() {
+            saveHighScore();
+            alert("Well done! You get: " + totalPoint);
+        }
+
+        function checkFinishGame() {
+            for(let i = GRIDSIZE - 1; i >= 0; i--) {
+                for(let j = GRIDSIZE - 1; j >= 0; j--) {
+                    let foundBox = $(".colorBox[data-j='" + j + "'][data-i='" + i + "']");
+                    let colorType = parseInt(foundBox.attr("data-c"));
+                    if(colorType > -1) {
+                        if(
+                            parseInt($(".colorBox[data-j='" + (j + 1) + "'][data-i='" + i + "']").attr("data-c"), 10) == colorType
+                            || parseInt($(".colorBox[data-j='" + (j - 1) + "'][data-i='" + i + "']").attr("data-c"), 10) == colorType
+                            || parseInt($(".colorBox[data-j='" + j + "'][data-i='" + (i + 1) + "']").attr("data-c"), 10) == colorType
+                            || parseInt($(".colorBox[data-j='" + j + "'][data-i='" + (i - 1) + "']").attr("data-c"), 10) == colorType
+                        ) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        function actPop() {
+            for(let i = 0; i < draftSelectList.length; i++) {
+                var draft = draftSelectList[i];
+                if(columnsPopping.hasOwnProperty(draft[1])) {
+                    columnsPopping[draft[1]].push(draft[0]);
+                } else {
+                    columnsPopping[draft[1]] = [draft[0]];
+                }
+            }
+
+
+            var columns = Object.keys(columnsPopping);
+
+            for(let i = 0; i < columns.length; i++) {
+                let columnToPup = columns[i];
+                let valuesToPop = columnsPopping[columnToPup];
+                let moveCount = 0;
+                for(let j = GRIDSIZE - 1; j >= 0; j--) {
+                    if(valuesToPop.includes(j)) {
+                        let foundBox = $(".colorBox[data-j='" + columnToPup + "'][data-i='" + j + "']");
+                        let datac = parseInt(foundBox.attr("data-c"), 10);
+                        $(foundBox.children()[0]).removeClass(colors[datac])
+                        foundBox.attr("data-c", "");
+                        moveCount++;
+                    } else {
+                        let movingBox = $(".colorBox[data-j='" + columnToPup + "'][data-i='" + j + "']");
+                        let dataj = parseInt(movingBox.attr("data-j"), 10);
+                        let datai = parseInt(movingBox.attr("data-i"), 10);
+                        let datac = parseInt(movingBox.attr("data-c"), 10);
+                        $(movingBox.children()[0]).removeClass(colors[datac])
+                        movingBox.attr("data-c", "");
+
+                        let targetBox = $(".colorBox[data-j='" + columnToPup + "'][data-i='" + (j + moveCount) + "']");
+                        targetBoxColorType = targetBox.attr("data-c");
+                        $(targetBox.children()[0]).removeClass(colors[targetBoxColorType]);
+                        $(targetBox.children()[0]).addClass(colors[datac])
+                        targetBox.attr("data-c", datac);
+                    }
+                }
+            }
+
+            draftSelectList = [];
+            columnsPopping = {};
+            $(".draftSelected").removeClass("draftSelected");
+            $(".draftPoint").html("0");
+            draftPoint = 0;
+        }
+        function calculatePop() {
+            totalPoint += draftPoint;
+            $(".totalPoint").html(totalPoint);
+        }
+
+        function calculateDraftPoint() {
+            draftPoint = 0;
+            const boxLength = draftSelectList.length;
+            for(var i = 1; i < boxLength + 1; i++) {
+                draftPoint += i;
+            }
+            $(".draftPoint").html(draftPoint);
+
+        }
+
+        function check2DArrayIncludes(arrToCheck, target) {
+            for(let i = 0; i < arrToCheck.length; i++) {
+                if(arrToCheck[i][0] === target[0] && arrToCheck[i][1] === target[1]) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        var dRow = [-1, 0, 1, 0];
+        var dCol = [0, 1, 0, -1];
+        var vis = Array.from(Array(GRIDSIZE), () => Array(GRIDSIZE).fill(false));
+        function isValid(row, col, colorType) {
+            if(row < 0 || col < 0
+                || row >= GRIDSIZE || col >= GRIDSIZE)
+                return false;
+
+            if(vis[row][col])
+                return false;
+
+            let boxToCheck = $(".colorBox[data-j='" + col + "'][data-i='" + row + "']");
+            if(boxToCheck.attr("data-c") !== colorType) {
+                return false;
+            }
+            return true;
+        }
+
+
+        function draftSelection(x, y) {
+            draftSelectList = [];
+            $(".colorBox").removeClass("draftSelected");
+            let box = $(".colorBox[data-j='" + y + "'][data-i='" + x + "']");
+            let colorType = box.attr("data-c");
+
+
+            var q = [];
+
+            q.push([x, y]);
+            vis[x][y] = true;
+
+            while(q.length != 0) {
+                var cell = q[0];
+                var x_cell = cell[0];
+                var y_cell = cell[1];
+                q.shift();
+                for(var i = 0; i < 4; i++) {
+                    var adjx = parseInt(x_cell, 10) + dRow[i];
+                    var adjy = parseInt(y_cell, 10) + dCol[i];
+                    if(isValid(adjx, adjy, colorType)) {
+                        q.push([adjx, adjy]);
+                        vis[adjx][adjy] = true;
+                        let validBox = $(".colorBox[data-j='" + adjy + "'][data-i='" + adjx + "']");
+                        validBox.addClass("draftSelected");
+                        draftSelectList.push([adjx, adjy]);
+                    }
+                }
+            }
+
+            if(draftSelectList.length > 0) {
+                box.addClass("draftSelected");
+                draftSelectList.push([x, y]);
+            }
+
+            vis = Array.from(Array(GRIDSIZE), () => Array(GRIDSIZE).fill(false));
+        }
+
+        function saveHighScore() {
+            const hs = localStorage.getItem("hs");
+            if(!hs || totalPoint > hs) {
+                $(".highScore").html(totalPoint);
+                localStorage.setItem("hs", totalPoint);
+            }
+        }
+        function loadHighScore() {
+            const hs = localStorage.getItem("hs");
+            if(hs) {
+                $(".highScore").html(hs);
+            }
+        }
+
         window.onload = init;
     </script>
 
@@ -96,6 +323,15 @@
 <body>
     <div class="gameScreen">
         <div class="board"></div>
+
+    </div>
+    <div class="scores">
+        <div>Selection: <div class="draftPoint"></div>
+        </div>
+        <div>Game: <div class="totalPoint"></div>
+        </div>
+        <div>High Score: <div class="highScore"></div>
+        </div>
     </div>
 </body>
 
