@@ -2,6 +2,11 @@
 
 <head>
     <style>
+        html,
+        body {
+            overscroll-behavior: none;
+        }
+
         html {
             height: 100vh;
             margin: 0;
@@ -53,14 +58,32 @@
             height: 80%;
             border-radius: 50%;
         }
+
+        .red {
+            background-color: lightcoral;
+        }
+
+        .green {
+            background-color: darkseagreen;
+        }
+
+        .blue {
+            background-color: lightblue;
+        }
+
+        .yellow {
+            background-color: khaki;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script>
+        const colors = ["red", "blue", "green", "yellow"];
         function init() {
             var board = $(".board");
             for(let i = 0; i < 10; i++) {
                 for(let j = 0; j < 10; j++) {
-                    board.append("<div class='colorBox' data-i='" + i + "' data-j='" + j + "'><div class=\"colorBall\"></div></div>");
+                    let colorName = colors[Math.floor(Math.random() * colors.length)];
+                    board.append("<div class='colorBox' data-i='" + i + "' data-j='" + j + "'><div class=\"colorBall " + colorName + "\"></div></div>");
                 }
             }
         }
