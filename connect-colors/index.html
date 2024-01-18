@@ -17,6 +17,8 @@
             margin: 0;
             padding: 0;
             height: 100%;
+            font-family: monospace;
+            font-size: xx-large;
         }
 
         .gameScreen {
@@ -56,18 +58,49 @@
             display: flex;
             justify-content: space-between;
             padding: 20px 30px;
-            font-family: monospace;
-            font-size: xx-large;
+
         }
 
         .scores div {
             display: flex;
         }
 
+        .colorStats {
+            padding: 20px 30px;
+            display: flex;
+            color: gray;
+        }
+
+        .colorStats div {
+            display: flex;
+            margin-right: 15px;
+        }
+
         .colorBall {
             width: 80%;
             height: 80%;
             border-radius: 50%;
+        }
+
+        .buttonContainer {
+            display: flex;
+            align-content: center;
+            justify-content: center;
+            padding: 20px
+        }
+
+        #btnRestart {
+            background-color: #8de185;
+            /* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            font-family: monospace;
+            font-size: xx-large;
         }
 
         .red {
@@ -97,10 +130,46 @@
         let draftSelectList = [];
         let draftPoint = 0;
         let totalPoint = 0;
-        var columnsPopping = {};
+        let columnsPopping = {};
+        let highPop = 0;
+        const dRow = [-1, 0, 1, 0];
+        const dCol = [0, 1, 0, -1];
+        let vis = Array.from(Array(GRIDSIZE), () => Array(GRIDSIZE).fill(false));
+        let colorStats = {};
+
         function addSecs(d, s) { return new Date(d.valueOf() + s * 100); }
-        function init() {
-            loadHighScore();
+
+        function buildNewGame() {
+            draftSelectList = [];
+            draftPoint = 0;
+            totalPoint = 0;
+            columnsPopping = {};
+            $(".draftPoint").html("0");
+            $(".totalPoint").html("");
+            colorStats = {};
+
+            for(let i = 0; i < GRIDSIZE; i++) {
+                for(let j = 0; j < GRIDSIZE; j++) {
+                    let colorType = Math.floor(Math.random() * colors.length);
+                    let colorName = colors[colorType];
+                    if(colorStats.hasOwnProperty(colorName)) {
+                        colorStats[colorName]++;
+                    } else {
+                        colorStats[colorName] = 1;
+                    }
+                    let box = $(".colorBox[data-j='" + j + "'][data-i='" + i + "']");
+                    box.attr("data-c", colorType);
+                    $(box.children()[0]).removeClass().addClass("colorBall " + colorName);
+                }
+            }
+            $("#clGreen").html(colorStats["green"]);
+            $("#clBlue").html(colorStats["blue"]);
+            $("#clYellow").html(colorStats["yellow"]);
+            $("#clRed").html(colorStats["red"]);
+
+        }
+
+        function createBoxes() {
             var board = $(".board");
             for(let i = 0; i < GRIDSIZE; i++) {
                 for(let j = 0; j < GRIDSIZE; j++) {
@@ -109,6 +178,13 @@
                     board.append("<div class='colorBox' data-i='" + i + "' data-j='" + j + "' data-c='" + colorType + "''><div class=\"colorBall " + colorName + "\"></div></div>");
                 }
             }
+        }
+
+        function init() {
+            createBoxes();
+            buildNewGame();
+            loadHighScore();
+            loadHighPop();
 
             $(".colorBox").on("click", function () {
                 let x = parseInt($(this).attr("data-i"), 10);
@@ -138,18 +214,18 @@
                             }, 10);
                         }
                     }
-
-
                 }
+            });
 
-
+            $("#btnRestart").on("click", function () {
+                buildNewGame();
             });
 
         }
 
         function finishGame() {
-            saveHighScore();
-            alert("Well done! You get: " + totalPoint);
+            var isHigh = saveHighScore();
+            alert((isHigh ? " THE NEW HIGH SCORE!!! " : "Well done! ") + "You get: " + totalPoint);
         }
 
         function checkFinishGame() {
@@ -222,6 +298,7 @@
         function calculatePop() {
             totalPoint += draftPoint;
             $(".totalPoint").html(totalPoint);
+            saveHighPop();
         }
 
         function calculateDraftPoint() {
@@ -243,9 +320,6 @@
             return false;
         }
 
-        var dRow = [-1, 0, 1, 0];
-        var dCol = [0, 1, 0, -1];
-        var vis = Array.from(Array(GRIDSIZE), () => Array(GRIDSIZE).fill(false));
         function isValid(row, col, colorType) {
             if(row < 0 || col < 0
                 || row >= GRIDSIZE || col >= GRIDSIZE)
@@ -306,12 +380,34 @@
             if(!hs || totalPoint > hs) {
                 $(".highScore").html(totalPoint);
                 localStorage.setItem("hs", totalPoint);
+                return true;
             }
+            return false;
         }
         function loadHighScore() {
             const hs = localStorage.getItem("hs");
             if(hs) {
                 $(".highScore").html(hs);
+            }
+        }
+
+        function saveHighPop() {
+            if(draftPoint > highPop) {
+                const hp = localStorage.getItem("hp");
+                if(!hp || draftPoint > hp) {
+                    $(".highPop").html(draftPoint);
+                    localStorage.setItem("hp", draftPoint);
+                    highPop = draftPoint;
+                    return true;
+                }
+                return false;
+            }
+        }
+        function loadHighPop() {
+            const hp = localStorage.getItem("hp");
+            if(hp) {
+                $(".highPop").html(hp);
+                highPop = hp;
             }
         }
 
@@ -331,10 +427,24 @@
         </div>
         <div>Game: <div class="totalPoint"></div>
         </div>
-        <div>High Score: <div class="highScore"></div>
+        <div>Highest Pop Score: <div class="highPop"></div>
+        </div>
+        <div>Highest Game Score: <div class="highScore"></div>
         </div>
     </div>
-    <div><a id="btnRestart" href="#">Restart</a></div>
+    <div class="colorStats">
+        <div>Red: <div id="clRed"></div>
+        </div>
+        <div>Green: <div id="clGreen"></div>
+        </div>
+        <div>Yellow: <div id="clYellow"></div>
+        </div>
+        <div>Blue: <div id="clBlue"></div>
+        </div>
+    </div>
+    <div class="buttonContainer">
+        <button id="btnRestart">Restart</button>
+    </div>
 </body>
 
 </html>
