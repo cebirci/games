@@ -382,6 +382,9 @@
 
 
         function getBox(datai, dataj) {
+            if(datai < 0 || dataj < 0 || datai >= GRIDSIZE || dataj >= GRIDSIZE) {
+                return null;
+            }
             return boxCollection.data[datai * 10 + dataj];
         }
 
@@ -391,6 +394,7 @@
                 if(box) {
                     return parseInt(box.getAttribute("data-c"), 10);
                 }
+                return -1;
             } catch(error) {
                 return -1;
             }
