@@ -131,7 +131,6 @@
             background-color: lightgrey;
         }
     </style>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script>
         const GRIDSIZE = 10;
         const colors = ["red", "blue", "green", "yellow"];
@@ -144,7 +143,7 @@
         const dCol = [0, 1, 0, -1];
         let vis = Array.from(Array(GRIDSIZE), () => Array(GRIDSIZE).fill(false));
         let colorStats = {};
-        let boxCollection = {};
+        let boxCollection = { data: [] };
 
         function addSecs(d, s) { return new Date(d.valueOf() + s * 100); }
 
@@ -153,11 +152,14 @@
             draftPoint = 0;
             totalPoint = 0;
             columnsPopping = {};
-            $(".draftPoint").html("0");
-            $(".totalPoint").html("");
-            $(".colorBox").removeClass("draftSelected");
-            $("#stars").html("");
+
+            document.getElementById("draftPoint").innerHTML = "0";
+            document.getElementById("totalPoint").innerHTML = "";
+            document.getElementById("stars").innerHTML = "";
+            clearDraftPaint();
             colorStats = {};
+
+            boxCollection["data"] = document.getElementById("board").children;
 
             for(let i = 0; i < GRIDSIZE; i++) {
                 for(let j = 0; j < GRIDSIZE; j++) {
@@ -168,18 +170,17 @@
                     } else {
                         colorStats[colorName] = 1;
                     }
-                    let box = $(".colorBox[data-j='" + j + "'][data-i='" + i + "']");
-                    box.attr("data-c", colorType);
-                    //$(box.children()[0]).removeClass().addClass("colorBall " + colorName);
+                    let box = getBox(i, j);
+                    box.setAttribute("data-c", colorType);
                 }
             }
 
             boxCollection["data"] = document.getElementById("board").children;
+            document.getElementById("clGreen").innerHTML = colorStats["green"];
+            document.getElementById("clBlue").innerHTML = colorStats["blue"];
+            document.getElementById("clYellow").innerHTML = colorStats["yellow"];
+            document.getElementById("clRed").innerHTML = colorStats["red"];
 
-            $("#clGreen").html(colorStats["green"]);
-            $("#clBlue").html(colorStats["blue"]);
-            $("#clYellow").html(colorStats["yellow"]);
-            $("#clRed").html(colorStats["red"]);
 
             const colorValues = Object.values(colorStats);
             let starCount = 1;
@@ -197,17 +198,25 @@
             }
 
             for(let i = 0; i < starCount; i++) {
-                $("#stars").append("⭐️");
+                document.getElementById("stars").append("⭐️");
             }
 
         }
 
         function createBoxes() {
-            var board = $("#board");
+            var board = document.getElementById("board");
             for(let i = 0; i < GRIDSIZE; i++) {
                 for(let j = 0; j < GRIDSIZE; j++) {
                     let colorType = Math.floor(Math.random() * colors.length);
-                    board.append("<div class='colorBox' data-i='" + i + "' data-j='" + j + "' data-c='" + colorType + "''><div class=\"colorBall\"></div></div>");
+                    let box = document.createElement("div");
+                    box.classList.add("colorBox");
+                    box.setAttribute("data-i", i);
+                    box.setAttribute("data-j", j);
+                    box.setAttribute("data-c", colorType);
+                    let colorBall = document.createElement("div");
+                    colorBall.classList.add("colorBall");
+                    box.append(colorBall);
+                    board.append(box);
                 }
             }
         }
@@ -218,40 +227,51 @@
             loadHighScore();
             loadHighPop();
             let eventName = isTouchDevice() ? "touchstart" : "click";
-            $(".colorBox").on(eventName, function (e) {
-                let x = parseInt($(this).attr("data-i"), 10);
-                let y = parseInt($(this).attr("data-j"), 10);
-                let c = parseInt($(this).attr("data-c"), 10);
 
-                if(isNaN(c)) {
-                    return;
-                }
+            var boxes = document.querySelectorAll(".colorBox");
+            boxes.forEach(function (box) {
+                box.addEventListener(eventName, function (e) {
 
-                var isNewArea = !check2DArrayIncludes(draftSelectList, [x, y]);
-                if(isNewArea) {
-                    draftSelection(x, y);
-                    calculateDraftPoint();
-                } else {
-                    if(draftSelectList.length > 1) {
-                        calculatePop();
-                        actPop();
-                        if(checkFinishGame()) {
-                            setTimeout(function () {
-                                start = new Date();
-                                end = addSecs(start, 1);
-                                do { start = new Date(); } while(end - start > 0);
+                    let element = e.target;
+                    if(element.classList.contains("colorBall")) {
+                        element = element.parentElement;
+                    }
+                    let x = parseInt(element.getAttribute("data-i"), 10);
+                    let y = parseInt(element.getAttribute("data-j"), 10);
+                    let c = parseInt(element.getAttribute("data-c"), 10);
 
-                                finishGame();
+                    if(isNaN(c)) {
+                        e.preventDefault();
+                        return;
+                    }
 
-                            }, 10);
+                    var isNewArea = !check2DArrayIncludes(draftSelectList, [x, y]);
+                    if(isNewArea) {
+                        draftSelection(x, y);
+                        calculateDraftPoint();
+                    } else {
+                        if(draftSelectList.length > 1) {
+                            calculatePop();
+                            actPop();
+                            if(checkFinishGame()) {
+                                setTimeout(function () {
+                                    start = new Date();
+                                    end = addSecs(start, 1);
+                                    do { start = new Date(); } while(end - start > 0);
+
+                                    finishGame();
+
+                                }, 10);
+                            }
                         }
                     }
-                }
-                e.preventDefault();
+                    e.preventDefault();
+                });
             });
 
-            $("#btnRestart").on("click", function () {
+            document.getElementById("btnRestart").addEventListener("click", function (e) {
                 buildNewGame();
+                e.preventDefault();
             });
         }
 
@@ -263,14 +283,14 @@
         function checkFinishGame() {
             for(let i = GRIDSIZE - 1; i >= 0; i--) {
                 for(let j = GRIDSIZE - 1; j >= 0; j--) {
-                    let foundBox = $(".colorBox[data-j='" + j + "'][data-i='" + i + "']");
-                    let colorType = parseInt(foundBox.attr("data-c"));
+                    let foundBox = getBox(i, j);
+                    let colorType = parseInt(foundBox.getAttribute("data-c"));
                     if(colorType > -1) {
                         if(
-                            parseInt($(".colorBox[data-j='" + (j + 1) + "'][data-i='" + i + "']").attr("data-c"), 10) == colorType
-                            || parseInt($(".colorBox[data-j='" + (j - 1) + "'][data-i='" + i + "']").attr("data-c"), 10) == colorType
-                            || parseInt($(".colorBox[data-j='" + j + "'][data-i='" + (i + 1) + "']").attr("data-c"), 10) == colorType
-                            || parseInt($(".colorBox[data-j='" + j + "'][data-i='" + (i - 1) + "']").attr("data-c"), 10) == colorType
+                            getBoxType(i, j + 1) == colorType
+                            || getBoxType(i, j - 1) == colorType
+                            || getBoxType(i + 1, j) == colorType
+                            || getBoxType(i - 1, j) == colorType
                         ) {
                             return false;
                         }
@@ -294,42 +314,35 @@
             var columns = Object.keys(columnsPopping);
 
             for(let i = 0; i < columns.length; i++) {
-                let columnToPup = columns[i];
+                let columnToPup = parseInt(columns[i], 10);
                 let valuesToPop = columnsPopping[columnToPup];
                 let moveCount = 0;
                 for(let j = GRIDSIZE - 1; j >= 0; j--) {
                     if(valuesToPop.includes(j)) {
-                        let foundBox = $(".colorBox[data-j='" + columnToPup + "'][data-i='" + j + "']");
-                        let datac = parseInt(foundBox.attr("data-c"), 10);
-                        //$(foundBox.children()[0]).removeClass(colors[datac])
-                        foundBox.attr("data-c", "");
+                        let foundBox = getBox(j, columnToPup);
+                        let datac = getBoxType(j, columnToPup);
+                        foundBox.setAttribute("data-c", "");
                         moveCount++;
                     } else {
-                        let movingBox = $(".colorBox[data-j='" + columnToPup + "'][data-i='" + j + "']");
-                        let dataj = parseInt(movingBox.attr("data-j"), 10);
-                        let datai = parseInt(movingBox.attr("data-i"), 10);
-                        let datac = parseInt(movingBox.attr("data-c"), 10);
-                        //$(movingBox.children()[0]).removeClass(colors[datac])
-                        movingBox.attr("data-c", "");
-
-                        let targetBox = $(".colorBox[data-j='" + columnToPup + "'][data-i='" + (j + moveCount) + "']");
-                        targetBoxColorType = targetBox.attr("data-c");
-                        //$(targetBox.children()[0]).removeClass(colors[targetBoxColorType]);
-                        //$(targetBox.children()[0]).addClass(colors[datac])
-                        targetBox.attr("data-c", datac);
+                        let movingBox = getBox(j, columnToPup);
+                        let datac = parseInt(movingBox.getAttribute("data-c"), 10);
+                        movingBox.setAttribute("data-c", "");
+                        let targetBox = getBox(j + moveCount, columnToPup);
+                        targetBoxColorType = targetBox.getAttribute("data-c");
+                        targetBox.setAttribute("data-c", datac);
                     }
                 }
             }
 
             draftSelectList = [];
             columnsPopping = {};
-            $(".draftSelected").removeClass("draftSelected");
-            $(".draftPoint").html("0");
+            clearDraftPaint();
+            document.getElementById("draftPoint").innerHTML = "0";
             draftPoint = 0;
         }
         function calculatePop() {
             totalPoint += draftPoint;
-            $(".totalPoint").html(totalPoint);
+            document.getElementById("totalPoint").innerHTML = totalPoint;
             saveHighPop();
         }
 
@@ -339,7 +352,7 @@
             for(var i = 1; i < boxLength + 1; i++) {
                 draftPoint += i;
             }
-            $(".draftPoint").html(draftPoint);
+            document.getElementById("draftPoint").innerHTML = draftPoint;
 
         }
 
@@ -372,17 +385,29 @@
             return boxCollection.data[datai * 10 + dataj];
         }
 
-        function draftSelection(x, y) {
-            draftSelectList = [];
-            //const boxes = document.getElementById("board").children;
+        function getBoxType(datai, dataj) {
+            try {
+                let box = getBox(datai, dataj);
+                if(box) {
+                    return parseInt(box.getAttribute("data-c"), 10);
+                }
+            } catch(error) {
+                return -1;
+            }
+        }
+
+        function clearDraftPaint() {
             for(const box of boxCollection.data) {
                 if(box.classList.contains('draftSelected')) {
                     box.classList.remove("draftSelected");
                 }
             }
+        }
 
+        function draftSelection(x, y) {
+            draftSelectList = [];
+            clearDraftPaint();
 
-            //let box = $(".colorBox[data-j='" + y + "'][data-i='" + x + "']");
             let box = getBox(x, y);
             let colorType = parseInt(box.getAttribute("data-c"), 10);
             box.classList.add("draftSelected");
@@ -422,7 +447,7 @@
         function saveHighScore() {
             const hs = localStorage.getItem("hs");
             if(!hs || totalPoint > hs) {
-                $(".highScore").html(totalPoint);
+                document.getElementById("highScore").innerHTML = totalPoint;
                 localStorage.setItem("hs", totalPoint);
                 return true;
             }
@@ -431,7 +456,7 @@
         function loadHighScore() {
             const hs = localStorage.getItem("hs");
             if(hs) {
-                $(".highScore").html(hs);
+                document.getElementById("highScore").innerHTML = hs;
             }
         }
 
@@ -439,7 +464,7 @@
             if(draftPoint > highPop) {
                 const hp = localStorage.getItem("hp");
                 if(!hp || draftPoint > hp) {
-                    $(".highPop").html(draftPoint);
+                    document.getElementById("highPop").innerHTML = draftPoint;
                     localStorage.setItem("hp", draftPoint);
                     highPop = draftPoint;
                     return true;
@@ -450,7 +475,7 @@
         function loadHighPop() {
             const hp = localStorage.getItem("hp");
             if(hp) {
-                $(".highPop").html(hp);
+                document.getElementById("highPop").innerHTML = hp;
                 highPop = hp;
             }
         }
@@ -475,15 +500,15 @@
     </div>
     <div class="scores">
         <div>
-            <div>Selection: <div class="draftPoint"></div>
+            <div>Selection: <div id="draftPoint"></div>
             </div>
-            <div>Game: <div class="totalPoint"></div>
+            <div>Game: <div id="totalPoint"></div>
             </div>
         </div>
         <div>
-            <div>Highest Pop: <div class="highPop"></div>
+            <div>Highest Pop: <div id="highPop"></div>
             </div>
-            <div>Highest Game: <div class="highScore"></div>
+            <div>Highest Game: <div id="highScore"></div>
             </div>
         </div>
     </div>
