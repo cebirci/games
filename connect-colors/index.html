@@ -189,8 +189,8 @@
             buildNewGame();
             loadHighScore();
             loadHighPop();
-
-            $(".colorBox").on("mousedown touchstart", function () {
+            let eventName = isTouchDevice() ? "touchstart" : "click";
+            $(".colorBox").on(eventName, function () {
                 let x = parseInt($(this).attr("data-i"), 10);
                 let y = parseInt($(this).attr("data-j"), 10);
                 let c = parseInt($(this).attr("data-c"), 10);
@@ -428,6 +428,13 @@
         }
 
         window.onload = init;
+
+        function isTouchDevice() {
+            return (('ontouchstart' in window) ||
+                (navigator.maxTouchPoints > 0) ||
+                (navigator.msMaxTouchPoints > 0));
+        }
+
     </script>
 
 
