@@ -31,7 +31,7 @@
             flex-direction: column;
         }
 
-        .board {
+        #board {
             width: 95%;
             height: 95%;
             background-color: #FFF;
@@ -136,6 +136,7 @@
         const dCol = [0, 1, 0, -1];
         let vis = Array.from(Array(GRIDSIZE), () => Array(GRIDSIZE).fill(false));
         let colorStats = {};
+        let boxCollection = {};
 
         function addSecs(d, s) { return new Date(d.valueOf() + s * 100); }
 
@@ -163,6 +164,9 @@
                     //$(box.children()[0]).removeClass().addClass("colorBall " + colorName);
                 }
             }
+
+            boxCollection["data"] = document.getElementById("board").children;
+
             $("#clGreen").html(colorStats["green"]);
             $("#clBlue").html(colorStats["blue"]);
             $("#clYellow").html(colorStats["yellow"]);
@@ -171,7 +175,7 @@
         }
 
         function createBoxes() {
-            var board = $(".board");
+            var board = $("#board");
             for(let i = 0; i < GRIDSIZE; i++) {
                 for(let j = 0; j < GRIDSIZE; j++) {
                     let colorType = Math.floor(Math.random() * colors.length);
@@ -328,20 +332,32 @@
             if(vis[row][col])
                 return false;
 
-            let boxToCheck = $(".colorBox[data-j='" + col + "'][data-i='" + row + "']");
-            if(boxToCheck.attr("data-c") !== colorType) {
+            let boxToCheck = getBox(row, col);
+            if(parseInt(boxToCheck.getAttribute("data-c"), 10) !== colorType) {
                 return false;
             }
             return true;
         }
 
 
+        function getBox(datai, dataj) {
+            return boxCollection.data[datai * 10 + dataj];
+        }
+
         function draftSelection(x, y) {
             draftSelectList = [];
-            $(".colorBox").removeClass("draftSelected");
-            let box = $(".colorBox[data-j='" + y + "'][data-i='" + x + "']");
-            let colorType = box.attr("data-c");
-            box.addClass("draftSelected");
+            //const boxes = document.getElementById("board").children;
+            for(const box of boxCollection.data) {
+                if(box.classList.contains('draftSelected')) {
+                    box.classList.remove("draftSelected");
+                }
+            }
+
+
+            //let box = $(".colorBox[data-j='" + y + "'][data-i='" + x + "']");
+            let box = getBox(x, y);
+            let colorType = parseInt(box.getAttribute("data-c"), 10);
+            box.classList.add("draftSelected");
             draftSelectList.push([x, y]);
 
             var q = [];
@@ -355,20 +371,20 @@
                 var y_cell = cell[1];
                 q.shift();
                 for(var i = 0; i < 4; i++) {
-                    var adjx = parseInt(x_cell, 10) + dRow[i];
-                    var adjy = parseInt(y_cell, 10) + dCol[i];
+                    var adjx = x_cell + dRow[i];
+                    var adjy = y_cell + dCol[i];
                     if(isValid(adjx, adjy, colorType)) {
                         q.push([adjx, adjy]);
                         vis[adjx][adjy] = true;
-                        let validBox = $(".colorBox[data-j='" + adjy + "'][data-i='" + adjx + "']");
-                        validBox.addClass("draftSelected");
+                        let validBox = getBox(adjx, adjy);
+                        validBox.classList.add("draftSelected");
                         draftSelectList.push([adjx, adjy]);
                     }
                 }
             }
 
             if(draftSelectList.length == 1) {
-                box.addClass("draftSelected").removeClass("draftSelected");
+                box.classList.remove("draftSelected");
                 draftSelectList = [];
             }
 
@@ -419,7 +435,7 @@
 
 <body>
     <div class="gameScreen">
-        <div class="board"></div>
+        <div id="board"></div>
 
     </div>
     <div class="scores">
