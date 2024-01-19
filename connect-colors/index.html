@@ -54,6 +54,22 @@
             flex-wrap: wrap;
         }
 
+        .colorBox[data-c="0"] div {
+            background-color: lightcoral;
+        }
+
+        .colorBox[data-c="1"] div {
+            background-color: lightblue;
+        }
+
+        .colorBox[data-c="2"] div {
+            background-color: darkseagreen;
+        }
+
+        .colorBox[data-c="3"] div {
+            background-color: khaki;
+        }
+
         .scores {
             display: flex;
             justify-content: space-between;
@@ -103,22 +119,6 @@
             font-size: xx-large;
         }
 
-        .red {
-            background-color: lightcoral;
-        }
-
-        .green {
-            background-color: darkseagreen;
-        }
-
-        .blue {
-            background-color: lightblue;
-        }
-
-        .yellow {
-            background-color: khaki;
-        }
-
         .draftSelected {
             background-color: lightgrey;
         }
@@ -146,6 +146,7 @@
             columnsPopping = {};
             $(".draftPoint").html("0");
             $(".totalPoint").html("");
+            $(".colorBox").removeClass("draftSelected");
             colorStats = {};
 
             for(let i = 0; i < GRIDSIZE; i++) {
@@ -159,7 +160,7 @@
                     }
                     let box = $(".colorBox[data-j='" + j + "'][data-i='" + i + "']");
                     box.attr("data-c", colorType);
-                    $(box.children()[0]).removeClass().addClass("colorBall " + colorName);
+                    //$(box.children()[0]).removeClass().addClass("colorBall " + colorName);
                 }
             }
             $("#clGreen").html(colorStats["green"]);
@@ -174,8 +175,7 @@
             for(let i = 0; i < GRIDSIZE; i++) {
                 for(let j = 0; j < GRIDSIZE; j++) {
                     let colorType = Math.floor(Math.random() * colors.length);
-                    let colorName = colors[colorType];
-                    board.append("<div class='colorBox' data-i='" + i + "' data-j='" + j + "' data-c='" + colorType + "''><div class=\"colorBall " + colorName + "\"></div></div>");
+                    board.append("<div class='colorBox' data-i='" + i + "' data-j='" + j + "' data-c='" + colorType + "''><div class=\"colorBall\"></div></div>");
                 }
             }
         }
@@ -269,7 +269,7 @@
                     if(valuesToPop.includes(j)) {
                         let foundBox = $(".colorBox[data-j='" + columnToPup + "'][data-i='" + j + "']");
                         let datac = parseInt(foundBox.attr("data-c"), 10);
-                        $(foundBox.children()[0]).removeClass(colors[datac])
+                        //$(foundBox.children()[0]).removeClass(colors[datac])
                         foundBox.attr("data-c", "");
                         moveCount++;
                     } else {
@@ -277,13 +277,13 @@
                         let dataj = parseInt(movingBox.attr("data-j"), 10);
                         let datai = parseInt(movingBox.attr("data-i"), 10);
                         let datac = parseInt(movingBox.attr("data-c"), 10);
-                        $(movingBox.children()[0]).removeClass(colors[datac])
+                        //$(movingBox.children()[0]).removeClass(colors[datac])
                         movingBox.attr("data-c", "");
 
                         let targetBox = $(".colorBox[data-j='" + columnToPup + "'][data-i='" + (j + moveCount) + "']");
                         targetBoxColorType = targetBox.attr("data-c");
-                        $(targetBox.children()[0]).removeClass(colors[targetBoxColorType]);
-                        $(targetBox.children()[0]).addClass(colors[datac])
+                        //$(targetBox.children()[0]).removeClass(colors[targetBoxColorType]);
+                        //$(targetBox.children()[0]).addClass(colors[datac])
                         targetBox.attr("data-c", datac);
                     }
                 }
