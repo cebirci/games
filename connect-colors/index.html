@@ -55,30 +55,38 @@
         }
 
         .colorBox[data-c="0"] div {
-            background-color: lightcoral;
+            background-color: rgb(233, 91, 91);
         }
 
         .colorBox[data-c="1"] div {
-            background-color: lightblue;
+            background-color: rgb(146, 209, 231);
         }
 
         .colorBox[data-c="2"] div {
-            background-color: darkseagreen;
+            background-color: rgb(139, 210, 139);
         }
 
         .colorBox[data-c="3"] div {
-            background-color: khaki;
+            background-color: #f8e969;
         }
 
         .scores {
             display: flex;
-            justify-content: space-between;
             padding: 20px 30px;
+            flex-direction: row;
+            justify-content: space-between;
+            font-size: 48px;
+        }
+
+        .scores>div {
+            display: flex;
             flex-direction: column;
         }
 
-        .scores div {
+        .scores>div>div {
             display: flex;
+            flex-direction: row;
+            justify-content: space-between
         }
 
         .colorStats {
@@ -148,6 +156,7 @@
             $(".draftPoint").html("0");
             $(".totalPoint").html("");
             $(".colorBox").removeClass("draftSelected");
+            $("#stars").html("");
             colorStats = {};
 
             for(let i = 0; i < GRIDSIZE; i++) {
@@ -171,6 +180,25 @@
             $("#clBlue").html(colorStats["blue"]);
             $("#clYellow").html(colorStats["yellow"]);
             $("#clRed").html(colorStats["red"]);
+
+            const colorValues = Object.values(colorStats);
+            let starCount = 1;
+
+            if(colorValues.some((v) => v >= 40)) {
+                starCount = 5;
+            } else if(colorValues.some((v) => v >= 37)) {
+                starCount = 4;
+            }
+            else if(colorValues.some((v) => v >= 34)) {
+                starCount = 3;
+            }
+            else if(colorValues.some((v) => v >= 29)) {
+                starCount = 2;
+            }
+
+            for(let i = 0; i < starCount; i++) {
+                $("#stars").append("⭐️");
+            }
 
         }
 
@@ -229,7 +257,7 @@
 
         function finishGame() {
             var isHigh = saveHighScore();
-            alert((isHigh ? " THE NEW HIGH SCORE!!! " : "Well done! ") + "You get: " + totalPoint);
+            alert((isHigh ? "THE NEW HIGH SCORE!!! " : "Well done! You get: ") + totalPoint);
         }
 
         function checkFinishGame() {
@@ -446,13 +474,17 @@
 
     </div>
     <div class="scores">
-        <div>Selection: <div class="draftPoint"></div>
+        <div>
+            <div>Selection: <div class="draftPoint"></div>
+            </div>
+            <div>Game: <div class="totalPoint"></div>
+            </div>
         </div>
-        <div>Game: <div class="totalPoint"></div>
-        </div>
-        <div>Highest Pop: <div class="highPop"></div>
-        </div>
-        <div>Highest Game: <div class="highScore"></div>
+        <div>
+            <div>Highest Pop: <div class="highPop"></div>
+            </div>
+            <div>Highest Game: <div class="highScore"></div>
+            </div>
         </div>
     </div>
     <div class="colorStats">
@@ -464,6 +496,7 @@
         </div>
         <div>Blue: <div id="clBlue"></div>
         </div>
+        <div id="stars"></div>
     </div>
     <div class="buttonContainer">
         <button id="btnRestart">Restart</button>
