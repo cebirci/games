@@ -190,7 +190,7 @@
             loadHighScore();
             loadHighPop();
 
-            $(".colorBox").on("click", function () {
+            $(".colorBox").on("mousedown touchstart", function () {
                 let x = parseInt($(this).attr("data-i"), 10);
                 let y = parseInt($(this).attr("data-j"), 10);
                 let c = parseInt($(this).attr("data-c"), 10);
