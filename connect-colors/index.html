@@ -284,7 +284,7 @@
             for(let i = GRIDSIZE - 1; i >= 0; i--) {
                 for(let j = GRIDSIZE - 1; j >= 0; j--) {
                     let foundBox = getBox(i, j);
-                    let colorType = parseInt(foundBox.getAttribute("data-c"));
+                    let colorType = getBoxType(i, j);
                     if(colorType > -1) {
                         if(
                             getBoxType(i, j + 1) == colorType
