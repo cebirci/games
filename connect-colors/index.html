@@ -252,7 +252,9 @@
             $("#btnRestart").on("click", function () {
                 buildNewGame();
             });
-
+            document.ondblclick = function (e) {
+                e.preventDefault();
+            }
         }
 
         function finishGame() {
