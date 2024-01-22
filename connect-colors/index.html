@@ -339,11 +339,31 @@
             clearDraftPaint();
             document.getElementById("draftPoint").innerHTML = "0";
             draftPoint = 0;
+            moveLeftAfterPop();
         }
         function calculatePop() {
             totalPoint += draftPoint;
             document.getElementById("totalPoint").innerHTML = totalPoint;
             saveHighPop();
+        }
+
+        function moveLeftAfterPop() {
+            let columnsToMove = [];
+            let moveCount = 0;
+            for(let j = 0; j < GRIDSIZE; j++) {
+                let bottomElementType = getBoxType(9, j);
+                if(bottomElementType < 0 || isNaN(bottomElementType)) {
+                    moveCount++
+                }
+                else if(moveCount > 0) {
+                    for(let i = 0; i < GRIDSIZE; i++) {
+                        let elementToMove = getBox(i, j);
+                        let targetBox = getBox(i, j - moveCount);
+                        targetBox.setAttribute("data-c", elementToMove.getAttribute("data-c"));
+                        elementToMove.setAttribute("data-c", "");
+                    }
+                }
+            }
         }
 
         function calculateDraftPoint() {
