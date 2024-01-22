@@ -134,6 +134,7 @@
     <script>
         const GRIDSIZE = 10;
         const colors = ["red", "blue", "green", "yellow"];
+        const COLORTYPE = "data-c";
         let draftSelectList = [];
         let draftPoint = 0;
         let totalPoint = 0;
@@ -171,7 +172,7 @@
                         colorStats[colorName] = 1;
                     }
                     let box = getBox(i, j);
-                    box.setAttribute("data-c", colorType);
+                    box.setAttribute(COLORTYPE, colorType);
                 }
             }
 
@@ -212,7 +213,7 @@
                     box.classList.add("colorBox");
                     box.setAttribute("data-i", i);
                     box.setAttribute("data-j", j);
-                    box.setAttribute("data-c", colorType);
+                    box.setAttribute(COLORTYPE, colorType);
                     let colorBall = document.createElement("div");
                     colorBall.classList.add("colorBall");
                     box.append(colorBall);
@@ -238,7 +239,7 @@
                     }
                     let x = parseInt(element.getAttribute("data-i"), 10);
                     let y = parseInt(element.getAttribute("data-j"), 10);
-                    let c = parseInt(element.getAttribute("data-c"), 10);
+                    let c = parseInt(element.getAttribute(COLORTYPE), 10);
 
                     if(isNaN(c)) {
                         e.preventDefault();
@@ -321,15 +322,15 @@
                     if(valuesToPop.includes(j)) {
                         let foundBox = getBox(j, columnToPup);
                         let datac = getBoxType(j, columnToPup);
-                        foundBox.setAttribute("data-c", "");
+                        foundBox.setAttribute(COLORTYPE, "");
                         moveCount++;
                     } else {
                         let movingBox = getBox(j, columnToPup);
-                        let datac = parseInt(movingBox.getAttribute("data-c"), 10);
-                        movingBox.setAttribute("data-c", "");
+                        let datac = parseInt(movingBox.getAttribute(COLORTYPE), 10);
+                        movingBox.setAttribute(COLORTYPE, "");
                         let targetBox = getBox(j + moveCount, columnToPup);
-                        targetBoxColorType = targetBox.getAttribute("data-c");
-                        targetBox.setAttribute("data-c", datac);
+                        targetBoxColorType = targetBox.getAttribute(COLORTYPE);
+                        targetBox.setAttribute(COLORTYPE, datac);
                     }
                 }
             }
@@ -359,8 +360,8 @@
                     for(let i = 0; i < GRIDSIZE; i++) {
                         let elementToMove = getBox(i, j);
                         let targetBox = getBox(i, j - moveCount);
-                        targetBox.setAttribute("data-c", elementToMove.getAttribute("data-c"));
-                        elementToMove.setAttribute("data-c", "");
+                        targetBox.setAttribute(COLORTYPE, elementToMove.getAttribute(COLORTYPE));
+                        elementToMove.setAttribute(COLORTYPE, "");
                     }
                 }
             }
@@ -394,7 +395,7 @@
                 return false;
 
             let boxToCheck = getBox(row, col);
-            if(parseInt(boxToCheck.getAttribute("data-c"), 10) !== colorType) {
+            if(parseInt(boxToCheck.getAttribute(COLORTYPE), 10) !== colorType) {
                 return false;
             }
             return true;
@@ -412,7 +413,7 @@
             try {
                 let box = getBox(datai, dataj);
                 if(box) {
-                    return parseInt(box.getAttribute("data-c"), 10);
+                    return parseInt(box.getAttribute(COLORTYPE), 10);
                 }
                 return -1;
             } catch(error) {
@@ -433,7 +434,7 @@
             clearDraftPaint();
 
             let box = getBox(x, y);
-            let colorType = parseInt(box.getAttribute("data-c"), 10);
+            let colorType = parseInt(box.getAttribute(COLORTYPE), 10);
             box.classList.add("draftSelected");
             draftSelectList.push([x, y]);
 
