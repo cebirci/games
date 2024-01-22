@@ -113,7 +113,7 @@
             padding: 20px
         }
 
-        #btnRestart {
+        .btn {
             background-color: #8de185;
             /* Green */
             border: none;
@@ -125,6 +125,13 @@
             font-size: 16px;
             font-family: monospace;
             font-size: xx-large;
+            cursor: pointer;
+        }
+
+        #btnRestart {}
+
+        #btn5Star {
+            margin-left: 32px;
         }
 
         .draftSelected {
@@ -145,6 +152,7 @@
         let vis = Array.from(Array(GRIDSIZE), () => Array(GRIDSIZE).fill(false));
         let colorStats = {};
         let boxCollection = { data: [] };
+        let starCount = 1;
 
         function addSecs(d, s) { return new Date(d.valueOf() + s * 100); }
 
@@ -184,7 +192,6 @@
 
 
             const colorValues = Object.values(colorStats);
-            let starCount = 1;
 
             if(colorValues.some((v) => v >= 40)) {
                 starCount = 5;
@@ -272,6 +279,18 @@
 
             document.getElementById("btnRestart").addEventListener("click", function (e) {
                 buildNewGame();
+                e.preventDefault();
+            });
+
+            document.getElementById("btn5Star").addEventListener("click", function (e) {
+
+                if(confirm("Cebirci'ye bu özellik için teşekkür ediyorum")) {
+                    while(starCount < 5) {
+                        buildNewGame();
+                    }
+                }
+
+
                 e.preventDefault();
             });
         }
@@ -549,7 +568,8 @@
         <div id="stars"></div>
     </div>
     <div class="buttonContainer">
-        <button id="btnRestart">Restart</button>
+        <button class="btn" id="btnRestart">Restart</button>
+        <button class="btn" id="btn5Star">🔒 Find a 5-Star Game</button>
     </div>
 </body>
 
