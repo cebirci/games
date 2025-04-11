@@ -105,6 +105,111 @@
          }
          #message-overlay div { background-color: rgba(50, 50, 100, 0.9); padding: 30px; border-radius: 10px; max-width: 80%; }
          #message-overlay button { padding: 10px 20px; font-size: 1em; margin-top: 20px; cursor: pointer; }
+
+/* --- Responsive Styles for Landscape Mobile --- */
+@media screen and (max-width: 850px) and (orientation: landscape) {
+
+    body {
+        /* Prevent zooming issues and ensure layout fits */
+        padding: 5px; /* Reduce padding on smaller screens */
+        align-items: flex-start; /* Align to top */
+    }
+
+    #game-container {
+        width: calc(100vw - 130px); /* Use viewport width minus approx mansion width */
+        padding: 10px; /* Reduce padding */
+        border-width: 4px; /* Thinner border */
+    }
+
+    #ui-bar {
+        height: 40px; /* Smaller UI bar */
+        padding: 5px 10px;
+        margin-bottom: 10px;
+    }
+    #ui-bar h1 {
+        font-size: 16px; /* Smaller title */
+        margin: 0 5px;
+    }
+     #ui-bar > div { /* Cash/Time boxes */
+        padding: 3px 8px;
+        min-width: 100px; /* Adjust min-width */
+     }
+     #cash-display, #time-elapsed {
+        font-size: 13px; /* Smaller text */
+     }
+
+
+    #game-board {
+        /* Smaller grid cells */
+        grid-template-columns: repeat(6, 75px); /* Reduced from 100px */
+        grid-template-rows: repeat(4, 55px); /* Reduced from 70px */
+        gap: 10px; /* Reduced from 20px */
+        padding: 5px;
+
+        /* Update road background size: cell + gap */
+        /* New cell width = 75px, gap = 10px => 85px */
+        /* New cell height = 55px, gap = 10px => 65px */
+        background-size: 85px 65px;
+    }
+
+    .plot {
+        padding-bottom: 3px;
+    }
+
+    .house {
+        width: 40px; /* Reduced house size */
+    }
+
+    /* Adjust owned outline */
+    .house.owned {
+        outline-width: 1px;
+        outline-offset: 0px;
+    }
+
+
+    .price-tag {
+        top: -20px; /* Adjust position relative to smaller houses */
+        padding: 2px 5px;
+        font-size: 10px;
+    }
+
+    .price-arrow {
+        font-size: 11px;
+         width: 6px;
+         margin-right: 2px;
+    }
+
+    #mansion-area {
+        width: 110px; /* Smaller mansion area */
+        min-height: 90px;
+        padding: 8px;
+        margin-left: 10px; /* Reduced margin */
+        border-width: 2px;
+    }
+     #mansion-area span {
+        font-size: 12px; /* Smaller text */
+        margin-bottom: 5px;
+     }
+     #buy-mansion-button {
+        padding: 6px 10px;
+        font-size: 11px;
+        margin-top: 5px;
+     }
+
+     /* Message overlay might need smaller text */
+     #message-overlay {
+         font-size: 1.1em;
+     }
+     #message-overlay div {
+         padding: 20px;
+     }
+      #message-overlay button {
+         padding: 8px 15px;
+         font-size: 0.9em;
+      }
+
+} /* End of media query */
+        
     </style>
 </head>
 <body>
