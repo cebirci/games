@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mansion Impossible</title>
+    <style>
+        /* ... all CSS remains the same ... */
+        /* Basic Reset & Body Styling */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Arial', sans-serif; background-color: #f0e68c; display: flex;
+            justify-content: center; align-items: center; min-height: 100vh;
+            padding: 20px; overflow: hidden; user-select: none;
+        }
+
+        /* Game Container */
+        #game-container {
+            border: 8px solid #ffcc00; background-color: #228b22; padding: 20px;
+            border-radius: 15px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative; width: 820px;
+        }
+
+        /* UI Bar */
+        #ui-bar {
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;
+            background-color: #ffcc00; border-bottom: 4px solid #e6b800; margin-bottom: 20px;
+            border-radius: 5px; height: 50px;
+        }
+        #ui-bar > div {
+            background-color: #fff; padding: 5px 15px; border-radius: 20px; border: 2px solid #ccc;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2); min-width: 150px; text-align: center;
+        }
+        #ui-bar h1 { font-size: 24px; color: #333; text-shadow: 1px 1px 1px #fff; margin: 0 20px; flex-shrink: 0; }
+        #cash-display, #time-elapsed { font-weight: bold; font-size: 16px; color: #0056b3; }
+
+        /* Game Board */
+        #game-board {
+            display: grid; grid-template-columns: repeat(6, 100px); grid-template-rows: repeat(4, 70px); gap: 20px;
+            background-image: linear-gradient(rgba(60, 60, 60, 1) 5px, transparent 5px), linear-gradient(90deg, rgba(60, 60, 60, 1) 5px, transparent 5px);
+            background-size: 120px 90px; background-color: #555; padding: 10px; border: 2px solid #444; margin-top: 10px;
+        }
+
+        /* Plots */
+        .plot {
+            background-color: #90ee90; border: 1px dashed #6b8e23; position: relative;
+            display: flex; justify-content: center; align-items: flex-end; /* Align house to bottom */
+            padding-bottom: 5px; /* Space for house */
+        }
+
+        /* Houses - Now using SVG */
+        .house {
+            width: 55px; height: auto; cursor: pointer; transition: transform 0.1s ease;
+            z-index: 10; position: relative; overflow: visible; display: block;
+        }
+         .house svg { display: block; width: 100%; height: 100%; }
+        .house:hover { transform: scale(1.1); }
+
+        /* Enhanced Owned Indicator */
+        .house.owned::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 200, 0, 0.35); z-index: 11; pointer-events: none; border-radius: 5px;
+        }
+        .house.owned { outline: 2px solid gold; outline-offset: 1px; border-radius: 5px; }
+
+        /* Price Tag Styling */
+        .price-tag {
+            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7); color: white; padding: 3px 8px;
+            border-radius: 5px; font-size: 12px; font-weight: bold; white-space: nowrap;
+            border: 1px solid white; transition: background-color 0.2s ease, color 0.2s ease;
+            z-index: 12; display: inline-flex; align-items: center;
+        }
+        .price-tag.peaking { background-color: #FFA500cc; color: white; border-color: white; }
+
+        /* Arrow Span *inside* the price tag */
+        .price-arrow {
+            font-weight: bold; margin-right: 3px; width: 8px; display: inline-block; text-align: center;
+        }
+        .price-arrow.up { color: #00ff00; }
+        .price-arrow.down { color: #ff4444; }
+        .price-arrow:empty { margin-right: 0; }
+
+        /* Mansion Area */
+         #mansion-area {
+            width: 150px; min-height: 120px; background-color: #dcdcdc; border: 3px solid #808080;
+            border-radius: 5px; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; padding: 15px; text-align: center; z-index: 5; margin-left: 30px;
+            align-self: center;
+         }
+         #mansion-area span { font-weight: bold; color: #333; margin-bottom: 8px; }
+         #buy-mansion-button {
+             padding: 10px 18px; font-size: 14px; font-weight: bold; cursor: pointer; border: none;
+             border-radius: 5px; background-color: #4CAF50; color: white; transition: background-color 0.2s ease;
+             margin-top: 10px;
+         }
+         #buy-mansion-button:disabled { background-color: #cccccc; color: #666666; cursor: not-allowed; }
+         #buy-mansion-button:not(:disabled):hover { background-color: #45a049; }
+
+         /* Message Overlay */
+         #message-overlay {
+             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7);
+             display: flex; justify-content: center; align-items: center; z-index: 100;
+             color: white; font-size: 1.5em; text-align: center;
+         }
+         #message-overlay div { background-color: rgba(50, 50, 100, 0.9); padding: 30px; border-radius: 10px; max-width: 80%; }
+         #message-overlay button { padding: 10px 20px; font-size: 1em; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <!-- ... HTML structure remains the same ... -->
+     <div id="game-container">
+        <div id="ui-bar">
+            <div>Time Taken: <span id="time-elapsed">0 yrs : 0 mnths</span></div>
+             <h1>MANSION: IMPOSSIBLE</h1>
+            <div>Cash: <span id="cash-display">100 K</span></div>
+        </div>
+        <div id="game-board"></div>
+    </div>
+
+    <div id="mansion-area">
+         <span>The Mansion</span>
+         <span>(10,000 K)</span>
+         <button id="buy-mansion-button" disabled>Buy Mansion</button>
+     </div>
+
+     <div id="message-overlay" style="display: none;">
+         <div id="message-content"></div>
+     </div>
+
+    <script>
+        // --- SVG Data ---
+        const HOUSE_SVG_STRING = `<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 473.763"><path fill-rule="nonzero" d="M9.005 183.371a12.09 12.09 0 012.537-2.598L248.016 2.406c4.177-3.127 10.077-3.288 14.458 0l115.875 87.017V70.365c-5.821-.01-10.537-4.731-10.537-10.552V34.589c0-5.827 4.725-10.551 10.552-10.551h83.575c5.827 0 10.552 4.724 10.552 10.551v25.224c0 5.824-4.719 10.545-10.54 10.552v81.843l36.413 27.344a12.04 12.04 0 012.185 1.85c30.558 32.907-5.7 80.853-42.52 71.541v207.555c0 7.325-5.94 13.265-13.265 13.265H64.878c-7.325 0-13.265-5.94-13.265-13.265V252.147c-36.464 7.471-67.578-36.805-42.608-68.776z"/><path fill="#E2E9E3" d="M256.738 100.953l188.026 145.986v213.559h-53.971l.003-.158V314.242c0-5.554-4.368-10.057-9.755-10.057H280.904c-5.387 0-9.755 4.503-9.755 10.057V460.34l.003.158H64.878V247.094l191.86-146.141zM128.599 304.389H235.24c5.554 0 10.056 4.411 10.056 9.853v83.429c0 5.442-4.502 9.853-10.056 9.853H128.599c-5.554 0-10.057-4.411-10.057-9.853v-83.429c0-5.442 4.503-9.853 10.057-9.853z"/><path fill="#CCD2CD" d="M256.738 100.953l14.222 11.056L90.132 255.99l-3.339 204.508H63.784l1.094-213.58z"/><path fill="#E2534B" d="M451.399 70.365v73.919l-62.498-46.937V70.365z"/><path fill="#E2E9E3" d="M378.364 34.589h83.575v25.225h-83.575z"/><path fill="#E2534B" d="M18.794 190.38c-20.167 25.077 9.009 61.919 38.549 47.153l199.49-151.768 193.23 150.203c28.924 21.505 66.555-19.596 41.678-46.372L255.268 12.012 18.794 190.38z"/><path fill="#CC4B44" d="M18.794 190.38c-15.914 23.528.939 31.801 30.48 17.035l206.711-155.24L278.79 29.68l-23.522-17.668L18.794 190.38z"/><path fill="#E2534B" d="M280.904 314.242h100.137V460.34H280.904V314.242zm84.174 62.882l4.357 2.208a2.33 2.33 0 011.276 2.073l.006 16.078a2.333 2.333 0 01-1.899 2.29l-4.314 1.249a2.316 2.316 0 01-2.868-1.583l-.095-.644-.009-19.687a2.331 2.331 0 013.546-1.984z"/><path fill="#CC4B44" d="M280.904 314.242h100.137v2.755c-118.269-.246-91.937 43.89-91.937 143.343h-8.2V314.242z"/><path fill="#fff" d="M128.599 314.242H176.7v37.695h-47.861l-.24.009v-37.704zm56.14 0h50.501v37.853a4.022 4.022 0 00-1.121-.158h-49.38v-37.695zm50.501 45.576v37.853h-50.501v-37.695h49.38c.389 0 .766-.055 1.121-.158zm-58.54 37.853h-48.101v-37.704l.24.009H176.7v37.695z"/><path d="M253.533 182.475c14.176 0 25.67 11.49 25.67 25.669 0 14.177-11.494 25.67-25.67 25.67-14.18 0-25.67-11.493-25.67-25.67 0-14.179 11.49-25.669 25.67-25.669z"/></svg>`;
+
+        // --- Game Configuration ---
+        const STARTING_CASH = 100000;
+        const MANSION_PRICE = 10000000;
+        const GRID_ROWS = 4;
+        const GRID_COLS = 6;
+        const MAX_HOUSES = GRID_ROWS * GRID_COLS;
+        const TICK_INTERVAL = 100; // Interval for house price updates
+        const TIME_UPDATE_INTERVAL = 1000; // Interval for real-time second ticks (1000ms = 1 second)
+        const GAME_TIME_MULTIPLIER = 6; // <<< How many game ticks pass per real second (6 means 5 real secs = 1 game month)
+        const HOUSE_SPAWN_INTERVAL = 1500;
+        const HOUSE_SPAWN_CHANCE = 0.65;
+        const PEAK_ALERT_THRESHOLD = 0.90;
+        const MIN_SPAWN_PRICE_FLOOR = 5000;
+
+        // --- House Type Config ---
+        const HOUSE_TYPE_CONFIG = {
+            cheap: { variance: 0.20, peakMultiplier: 1.6, peakTime: 4500, fallTime: 4500, className: 'cheap' },
+            medium: { variance: 0.40, peakMultiplier: 1.9, peakTime: 6000, fallTime: 6000, className: 'medium' },
+            expensive: { variance: 0.65, peakMultiplier: 2.2, peakTime: 7500, fallTime: 7500, className: 'expensive' }
+        };
+
+        // --- Game State ---
+        let cash = STARTING_CASH;
+        let gameTimeSeconds = 0; // Represents accumulated game "ticks"
+        let houses = {};
+        let plots = [];
+        let houseCounter = 0;
+        let gameIntervals = [];
+        let gameActive = false;
+
+        // --- DOM Elements ---
+        const gameBoard = document.getElementById('game-board');
+        const cashDisplay = document.getElementById('cash-display');
+        const timeDisplay = document.getElementById('time-elapsed');
+        const buyMansionButton = document.getElementById('buy-mansion-button');
+        const messageOverlay = document.getElementById('message-overlay');
+        const messageContent = document.getElementById('message-content');
+
+        // --- Utility Functions ---
+        function formatCurrency(value) { /* ... unchanged ... */
+            value = Number(value); if (isNaN(value)) return "ERR";
+            if (value >= 1000000) { return (value / 1000000).toFixed(1).replace('.0', '') + ' M'; }
+            else if (value >= 1000) { return (value / 1000).toFixed(0) + ' K'; }
+            return value.toFixed(0);
+         }
+        function formatTime(totalGameTicks) { // Renamed parameter for clarity
+            // 30 game ticks represent 1 game month with the original setup
+            const totalMonths = Math.floor(totalGameTicks / 30);
+            const years = Math.floor(totalMonths / 12);
+            const months = totalMonths % 12;
+            return `${years} yrs : ${months} mnths`;
+        }
+        function getRandomInt(min, max) { /* ... unchanged ... */
+            min = Math.floor(min); max = Math.floor(max); if (min > max) [min, max] = [max, min];
+             if (min === max) return min; return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // --- Game Logic Functions ---
+        function updateUI() { /* ... unchanged ... */
+            cashDisplay.textContent = formatCurrency(cash);
+            timeDisplay.textContent = formatTime(gameTimeSeconds);
+            buyMansionButton.disabled = cash < MANSION_PRICE;
+        }
+        function createPlots() { /* ... unchanged ... */
+            gameBoard.innerHTML = ''; plots = [];
+            for (let i = 0; i < GRID_ROWS * GRID_COLS; i++) {
+                const plot = document.createElement('div'); plot.classList.add('plot');
+                plot.dataset.plotIndex = i; gameBoard.appendChild(plot);
+                plots.push({ element: plot, occupied: false });
+            }
+        }
+        function findEmptyPlotIndex() { /* ... unchanged ... */
+            const emptyPlots = plots.map((p, i) => ({...p, index: i})).filter(p => !p.occupied);
+            if (emptyPlots.length === 0) return -1;
+            const randomIndex = Math.floor(Math.random() * emptyPlots.length);
+            return emptyPlots[randomIndex].index;
+        }
+        function selectBiasedHouseType(currentCash) { /* ... unchanged ... */
+            const progress = Math.min(1, Math.max(0, currentCash) / MANSION_PRICE);
+            const pCheapStart = 0.60, pMediumStart = 0.30, pExpensiveStart = 0.10;
+            const pCheapEnd = 0.10,   pMediumEnd = 0.40,   pExpensiveEnd = 0.50;
+            const pCheap = pCheapStart + (pCheapEnd - pCheapStart) * progress;
+            const pMedium = pMediumStart + (pMediumEnd - pMediumStart) * progress;
+            const pExpensive = 1.0 - pCheap - pMedium;
+            const rand = Math.random();
+            if (rand < pCheap) return 'cheap';
+            else if (rand < pCheap + pMedium) return 'medium';
+            else return 'expensive';
+        }
+        function spawnHouse() { /* ... unchanged ... */
+             if (!gameActive || Object.keys(houses).length >= MAX_HOUSES || Math.random() > HOUSE_SPAWN_CHANCE) return;
+            const plotIndex = findEmptyPlotIndex(); if (plotIndex === -1) return;
+            const typeKey = selectBiasedHouseType(cash); const config = HOUSE_TYPE_CONFIG[typeKey]; const id = `house-${houseCounter++}`;
+            const cashFractionTarget = 0.30 + (Math.min(1, cash / MANSION_PRICE) * 0.30);
+            const targetPrice = Math.max(MIN_SPAWN_PRICE_FLOOR * 2, cash * cashFractionTarget);
+            const minSpawnPrice = Math.max(MIN_SPAWN_PRICE_FLOOR, targetPrice * (1 - config.variance));
+            const maxSpawnPrice = targetPrice * (1 + config.variance);
+            const basePrice = getRandomInt(minSpawnPrice, maxSpawnPrice); const peakPrice = Math.floor(basePrice * config.peakMultiplier);
+            const houseEl = document.createElement('div'); houseEl.className = 'house'; houseEl.id = id; houseEl.dataset.id = id; houseEl.innerHTML = HOUSE_SVG_STRING;
+            const priceTagEl = document.createElement('div'); priceTagEl.className = 'price-tag';
+            const priceArrowEl = document.createElement('span'); priceArrowEl.className = 'price-arrow';
+            const priceTextEl = document.createElement('span'); priceTextEl.className = 'price-text'; priceTextEl.textContent = formatCurrency(basePrice);
+            priceTagEl.appendChild(priceArrowEl); priceTagEl.appendChild(priceTextEl);
+            plots[plotIndex].element.appendChild(houseEl); plots[plotIndex].element.appendChild(priceTagEl);
+            houses[id] = {
+                id: id, type: typeKey, element: houseEl, priceTagElement: priceTagEl, priceArrowElement: priceArrowEl, priceTextElement: priceTextEl,
+                plotIndex: plotIndex, basePrice: basePrice, peakPrice: peakPrice, currentPrice: basePrice, previousPrice: basePrice,
+                timeToPeak: config.peakTime, fallTime: config.fallTime, spawnTime: Date.now(), peakReachedTime: null
+            };
+            plots[plotIndex].occupied = true; houseEl.addEventListener('click', handleHouseClick); updatePriceDisplay(houses[id]);
+        }
+        function updatePriceDisplay(house) { /* ... unchanged ... */
+             house.priceTextElement.textContent = formatCurrency(house.currentPrice);
+            let arrowClass = ''; let arrowContent = '';
+            if (house.currentPrice > house.previousPrice) { arrowClass = 'up'; arrowContent = '▲'; }
+            else if (house.currentPrice < house.previousPrice) { arrowClass = 'down'; arrowContent = '▼'; }
+            else { arrowContent = ''; }
+            house.priceArrowElement.className = 'price-arrow ' + arrowClass; house.priceArrowElement.textContent = arrowContent;
+             const timeElapsed = Date.now() - house.spawnTime; const isRising = timeElapsed < house.timeToPeak; let isPeaking = false;
+             if (isRising && house.currentPrice >= house.peakPrice * PEAK_ALERT_THRESHOLD && house.currentPrice < house.peakPrice) { isPeaking = true; }
+             if (isPeaking) { house.priceTagElement.classList.add('peaking'); } else { house.priceTagElement.classList.remove('peaking'); }
+        }
+        function updatePrices() { /* ... unchanged ... */
+            if (!gameActive) return; const now = Date.now();
+            for (const houseId in houses) {
+                const house = houses[houseId]; house.previousPrice = house.currentPrice;
+                const timeElapsed = now - house.spawnTime; let newPrice = house.currentPrice; let phase = 'rising';
+                if (house.peakReachedTime === null && timeElapsed >= house.timeToPeak) { house.peakReachedTime = house.spawnTime + house.timeToPeak; newPrice = house.peakPrice; phase = 'falling'; }
+                else if (house.peakReachedTime !== null) { phase = 'falling'; }
+                if (phase === 'rising') {
+                    const riseProgress = Math.min(timeElapsed / house.timeToPeak, 1); newPrice = Math.floor(house.basePrice + (house.peakPrice - house.basePrice) * riseProgress);
+                } else {
+                    const timeSincePeak = now - house.peakReachedTime; const floorPrice = Math.max(MIN_SPAWN_PRICE_FLOOR, house.basePrice * 0.05);
+                    if (timeSincePeak >= house.fallTime) { newPrice = floorPrice; if (!house.element.classList.contains('owned')) { removeHouse(houseId); continue; } }
+                    else { const fallProgress = timeSincePeak / house.fallTime; newPrice = Math.floor(house.peakPrice - (house.peakPrice - floorPrice) * fallProgress); }
+                }
+                 newPrice = Math.max(MIN_SPAWN_PRICE_FLOOR, newPrice); if (phase === 'rising') { newPrice = Math.min(newPrice, house.peakPrice); }
+                house.currentPrice = newPrice; updatePriceDisplay(house);
+            }
+        }
+        function removeHouse(houseId) { /* ... unchanged ... */
+             const house = houses[houseId]; if (!house) return;
+            house.element.removeEventListener('click', handleHouseClick); house.element.remove(); if (house.priceTagElement) house.priceTagElement.remove();
+            if (plots[house.plotIndex] && plots[house.plotIndex].occupied) { plots[house.plotIndex].occupied = false; }
+            delete houses[houseId];
+        }
+        function handleHouseClick(event) { /* ... unchanged ... */
+             if (!gameActive) return; const houseElement = event.currentTarget; const houseId = houseElement.dataset.id;
+            const house = houses[houseId]; if (!house) return; const isOwned = houseElement.classList.contains('owned');
+            if (isOwned) { cash += house.currentPrice; removeHouse(houseId); updateUI(); }
+            else {
+                if (cash >= house.currentPrice) { cash -= house.currentPrice; houseElement.classList.add('owned'); updateUI(); }
+                else { cashDisplay.parentElement.style.transition = 'background-color 0.1s ease-in-out'; cashDisplay.parentElement.style.backgroundColor = '#ffdddd'; setTimeout(() => { cashDisplay.parentElement.style.backgroundColor = '#fff'; }, 200); }
+            }
+        }
+        function buyMansion() { /* ... unchanged ... */ if (cash >= MANSION_PRICE) endGame(true); }
+        function showMessage(htmlContent, showButton = true, buttonText = "OK", onButtonClick = null) { /* ... unchanged ... */
+             messageContent.innerHTML = htmlContent; const existingButton = messageContent.querySelector('button');
+            if (existingButton) existingButton.remove(); if (showButton) {
+                const newButton = document.createElement('button'); newButton.textContent = buttonText;
+                newButton.onclick = () => { messageOverlay.style.display = 'none'; if (onButtonClick) onButtonClick(); };
+                messageContent.appendChild(newButton);
+            } messageOverlay.style.display = 'flex';
+        }
+
+        // --- MODIFIED startGame ---
+        function startGame() {
+            console.log("Starting game...");
+            messageOverlay.style.display = 'none'; if (gameActive) return;
+            cash = STARTING_CASH;
+            gameTimeSeconds = 0; // Reset game ticks
+            houses = {}; houseCounter = 0; gameActive = true;
+            gameIntervals.forEach(clearInterval); gameIntervals = [];
+            createPlots(); updateUI();
+
+            // Start house price updates
+            gameIntervals.push(setInterval(updatePrices, TICK_INTERVAL));
+
+            // Start game time updates (faster now)
+            gameIntervals.push(setInterval(() => {
+                if(gameActive) {
+                    // Increment by the multiplier each real second
+                    gameTimeSeconds += GAME_TIME_MULTIPLIER;
+                    updateUI(); // Update time display
+                }
+            }, TIME_UPDATE_INTERVAL)); // Still check every real second
+
+            // Start house spawning
+            gameIntervals.push(setInterval(spawnHouse, HOUSE_SPAWN_INTERVAL));
+
+            buyMansionButton.addEventListener('click', buyMansion);
+            console.log("Game loops started.");
+        }
+        // --- End MODIFIED startGame ---
+
+        function endGame(isWin) { /* ... unchanged ... */
+             if (!gameActive) return; gameActive = false; console.log("Ending game...");
+            gameIntervals.forEach(clearInterval); gameIntervals = []; buyMansionButton.removeEventListener('click', buyMansion);
+            let finalMessage = ""; if (isWin) { finalMessage = `<h2>Congratulations!</h2><p>You bought the Mansion for ${formatCurrency(MANSION_PRICE)}!</p><p>Final Time Score: ${formatTime(gameTimeSeconds)}</p>`; } // Updated win message slightly
+            else { finalMessage = `<h2>Game Over</h2><p>Maybe next time!</p>`; }
+            finalMessage += `<p>Refresh the page to play again.</p>`; showMessage(finalMessage, false);
+         }
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM Loaded."); createPlots(); updateUI(); buyMansionButton.disabled = true;
+            // Updated welcome message slightly to emphasize time score
+            showMessage(`<h2>Welcome to Mansion Impossible!</h2><p>Race against time! Buy low (click!), sell high (click again!). Houses appear matching your wealth. Use arrows (▲▼) and orange peak alert. Reach ${formatCurrency(MANSION_PRICE)} as fast as possible!</p>`, true, "Start Playing", startGame);
+        });
+    </script>
+
+</body>
+</html>
